@@ -23,6 +23,7 @@
         [iscript ]
             //f.maplst(移動前のマップ名)に対応する初期位置をf.etlに入れる
             if(f.maplst===undefined)f.etl='b3b';
+            if(f.maplst==='f101_34_01_pic')f.etl='b1b';//生産管理室(N)から
             if(f.maplst==='f101_62_01_ent')f.etl='c2l';//玄関(第一工場)(E1)から
             //if(f.maplst==='none')f.etl='c8l';//外(E2)から
             if(f.maplst==='f101_62_37_ref')f.etl='b12t';//冷蔵庫(右下)(S)から
@@ -35,6 +36,7 @@
             f.maplst=f.mpnm;//呼び出した(この)マップ名に中身を更新。
 
             //pushで範囲位置タイプを登録する
+            push(1,1,2,0,2)//生産管理室へ
             push(1,1,4,2,2)//玄関(第一工場)(E1)へ
             push(1,4,4,7,1)//外(E2)へ
             push(1,1,2,13,2)//冷蔵庫(右下)(S)へ
@@ -56,6 +58,11 @@
 ;イベント内容(何度も呼び出す)===============
 
     ;pushで記入した引数を文字列結合したラベルと内容(移動イベント<2>)
+    *11202
+    @eval exp="tf.mpnm='f101_34_01_pic'"//生産管理室
+    ;イベントを挟む場合はconfirm挟まない場合はgo
+    [jump target="*confirm" ]
+
     *11422
     @eval exp="tf.mpnm='f101_62_01_ent'"//移動先のマップ名
     ;イベントを挟む場合はconfirm挟まない場合はgo

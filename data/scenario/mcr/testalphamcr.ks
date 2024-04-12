@@ -1,5 +1,6 @@
 /*
 現状と、alphaのマクロを統合するために使用。
+240204現在使用中
 */
 
 ;最優先==========================
@@ -91,6 +92,9 @@
         f.pc['ps']=[];f.pc.ps['x']=0;f.pc.ps['y']=0;
         //キャラ登録用pass
         tf.pass='chara/tip/1341/'
+
+    //modeのラベル配列初期値
+        f.arlbl=[];
 
 [endscript ]
     ;## 操作キャラクターの登録
@@ -558,7 +562,7 @@
 
 
 
-/*
+                            /*
                             if(Math.sign(ofsX)==1){
                                 f.nx.pc.x+=ofsX;
                                 f.nx.mp.x+=ofsX;
@@ -593,6 +597,8 @@
         ;画像らの初期位置
             ;マップを呼び出す(nameを追加)
             ;[image name="field" visible="true" layer="0" folder="bgimage" storage="&tf.str+'.jpg'" x="&f.nx.mp.x" y="&f.nx.mp.y"  ]
+            ;背景(壁)を追加する
+            [image name="fieldb" visible="true" layer="0" folder="bgimage" storage="&'map/'+f.mpnm+'b.png'" x="&f.nx.mp.x-f.pc.sz.x" y="&f.nx.mp.y-f.pc.sz.y"  wait="false" cond="f.isma"]
             [image name="field" visible="true" layer="0" folder="bgimage" storage="&'map/'+f.mpnm+'.png'" x="&f.nx.mp.x" y="&f.nx.mp.y"  wait="false" ]
             [image name="field" visible="true" layer="1" folder="bgimage" storage="&'map/'+f.mpnm+'a.png'" x="&f.nx.mp.x" y="&f.nx.mp.y"  wait="false" cond="f.isma"]
             ;[layermode mode="multiply" name="field" visible="true" layer="1" folder="bgimage" storage="&'map/'+f.mpnm+'a.png'" x="&f.nx.mp.x" y="&f.nx.mp.y"  wait="false" cond="f.isma"]
@@ -988,6 +994,7 @@
                     ;マップを動かす
                     ;[anim name="field" left="&(f.mp.ps.x===0)?'0':f.mp.ps.x" top="&(f.mp.ps.y===0)?'0':f.mp.ps.y"  time="200" ]
                     [anim name="field" left="&(f.obj.x===0)?'0':f.obj.x" top="&(f.obj.y===0)?'0':f.obj.y"  time="200" ]
+                    [anim name="fieldb" left="&(f.obj.x===0)?f.pc.sz.x*-1:f.obj.x-f.pc.sz.x" top="&(f.obj.y===0)?f.pc.sz.y*-1:f.obj.y-f.pc.sz.y"  time="200" ]
                 [else ]
 
                     ;キャラクターを動かす
@@ -1040,6 +1047,13 @@
     ;イベント発生処理
     ;Eから切り離し
     [macro name="I"]
+    /*
+    - 0…通過可能、何も発生しない。　処理済
+    - 1…通行不可。現在値に隣接している場合そちらの方向へ動けない。 処理済
+    - 2…イベント発生0。通過したときに発生する　動きは処理済
+    - 3…イベント発生1。現在値に隣接している場合、そちらを向いてボタンで発生。1と合わせる
+    - 4…メニューのマップワープ移動専用。
+    */
 
         ;イベントの発生
         ;進行方向が2か3のときに発生
@@ -1056,10 +1070,7 @@
         ;3はf.gbinfoから、2はf.cinfoと一致するかを調べる
         ;[if exp="f.eveid in [,,2,3]" ]
         [if exp="f.eveid===3||f.cinfo===2||f.cinfo===4" ]
-            ;床が0且移動したときは無視する
-            [ignore exp="f.cinfo===0&&f.istrs||f.cinfo===2&&!f.istrs||f.cinfo===4&&!f.istrs" ]
-
-                ;現在座標を記録する
+                ;現在座標を記録する(ignoreのエンジンエラーのためここに記述)
                     [iscript ]
                         //これだと同じマスのイベントが発生しなくなる
                         if(!f.istrs)f.cinfo=0;
@@ -1067,36 +1078,73 @@
                         f.reps.y=f.povy
                         f.reps.z=f.povz
                     [endscript ]
+                    
+            ;床が0且移動したときは無視する
+            [ignore exp="f.cinfo===0&&f.istrs||f.cinfo===2&&!f.istrs||f.cinfo===4&&!f.istrs" ]
+
+                    ; ;現在座標を記録する
+                    ;     [iscript ]
+                    ;         //これだと同じマスのイベントが発生しなくなる
+                    ;         if(!f.istrs)f.cinfo=0;
+                    ;         f.reps.x=f.povx
+                    ;         f.reps.y=f.povy
+                    ;         f.reps.z=f.povz
+                    ;     [endscript ]
                 ;全体破壊　その場回転(!f.istrs)の時、2を発生させず、destroyも発生させない
                 ;[destroy]
                 ;2の時ADVモードに入るかわからんのでcmでいいかも。
                 [cm]
-                ;2を優先して発動させる
-                ;[mindev cond="f.cinfo==2"]
-                ;動作が被らないように共通キーを作成する。
-                @eval exp="if(f.cinfo===2)f.infokey=f.cinfo;"
-                ;これが発生するときボタンを消す
-                [free name="ar" layer="fix"  cond="f.infokey===2"]
-                ;[call storage="evt/ent1.ks"  cond="f.infokey===2"]
-                [call storage="&'map/'+f.mpnm+'.ks'"  cond="f.infokey===2"]
+                ;infokey作成箇所を1つにまとめ、[crilbl]でイベントラベル番号f.labelを作成しておく。
+                [iscript ]
+                    switch(true){
+                        case f.cinfo===2:f.infokey=f.cinfo;break;
+                        case f.cinfo===4:f.infokey=f.cinfo;break;
+                        case f.eveid===3:f.infokey=f.eveid;break;
+                    }
+                    //マスイベント以外の発火を初期値にする
+                    f.ismdeve=false
+                [endscript ]
+                ;イベントラベル番号f.labelを作成
+                [crilbl]
+                ;call先にラベル名が存在するかチェック
+                [iscript ]
+                    for(let i=0;i<f.arlbl.length;i++){
+                        tf.istn=f.label==f.arlbl[i]
+                        if(tf.istn)break;
+                    }
+                [endscript ]
+                ;上書きするイベントがあればf.ismdeve=T
+                [call storage="&''./mcr/mode/'+f.mode+'.ks'" target="&f.label"  cond="tf.istn" ]
 
+                [ignore exp="f.ismdeve" ]
+                    ;2を優先して発動させる
+                    ;[mindev cond="f.cinfo==2"]
+                    ;動作が被らないように共通キーを作成する。
+                    ;@eval exp="if(f.cinfo===2)f.infokey=f.cinfo;"
+                    [if exp="f.infokey===2"]
+                        ;これが発生するときボタンを消す
+                        [free name="ar" layer="fix"  cond="f.infokey===2"]
+                        ;[call storage="evt/ent1.ks"  cond="f.infokey===2"]
+                        [call storage="&'map/'+f.mpnm+'.ks'"  cond="f.infokey===2"]
 
-                ;4を発動させる。4はマップ移動専用。
-                @eval exp="if(f.cinfo===4)f.infokey=f.cinfo;"
-                ;これが発生するときボタンを消す
-                [free name="ar" layer="fix"  cond="f.infokey===4"]
-                ;移動先で2か4か区別のために入れる。
-                @eval exp="tf.warp=true" 
-                [call storage="&'map/'+f.mpnm+'.ks'"  cond="f.infokey===4"]
-                @eval exp="tf.warp=false" 
+                    [elsif exp="f.infokey===4" ]
+                        ;4を発動させる。4はマップ移動専用。
+                        ;@eval exp="if(f.cinfo===4)f.infokey=f.cinfo;"
+                        ;これが発生するときボタンを消す
+                        [free name="ar" layer="fix"  cond="f.infokey===4"]
+                        ;移動先で2か4か区別のために入れる。
+                        @eval exp="tf.warp=true" 
+                        [call storage="&'map/'+f.mpnm+'.ks'"  cond="f.infokey===4"]
+                        @eval exp="tf.warp=false" 
 
-
-
-
-                ;[objev cond="f.eveid==3"]
-                @eval exp="if(f.eveid===3)f.infokey=f.eveid;"
-                [destroy cond="f.infokey===3"]
-                [call storage="evt/ent1.ks"  cond="f.infokey===3"]
+                    [elsif exp="f.infokey===3" ]
+                        ;[objev cond="f.eveid==3"]
+                        ;@eval exp="if(f.eveid===3)f.infokey=f.eveid;"
+                        [destroy cond="f.infokey===3"]
+                        [call storage="&'map/'+f.mpnm+'.ks'"  cond="f.infokey===3"]
+                    
+                    [endif ]
+                [endignore ]
 
                 [ignore exp="f.infokey===0"]
                     ;もっかい破壊
@@ -1196,6 +1244,7 @@
             [else ]
                 ;マップを動かす
                 [anim name="field" left="&(f.obj.x===0)?'0':f.obj.x" top="&(f.obj.y===0)?'0':f.obj.y"  time="200" ]
+                [anim name="fieldb" left="&(f.obj.x===0)?f.pc.sz.x*-1:f.obj.x-f.pc.sz.x" top="&(f.obj.y===0)?f.pc.sz.x*-1:f.obj.y-f.pc.sz.y"  time="200" ]
         [endif ]
         
         ;移動させた位置を更新
@@ -1322,7 +1371,7 @@
                 for (let i=0;i<=a;i++){
                     if(tm[i][5]===f.infokey)n.push(i);
                     };
-                //  alert(n);//3
+                //  alert(n);//2,3,4,5,6,7
                     
                     //ホントは11622が入る=入っている
                 //  alert(tm[n]);
@@ -1332,9 +1381,12 @@
                 for (let i=0;i<=n.length-1;i++){
                     for (let l=0;l<=10;l++){
                         //3は配置座標X+1はモノのXサイズマス数
-                        if(x==tm[n[i]][3]+(tm[n[i]][1])-l){//後ろのは1まで減る               
-                            for (let b=0;b<=10;b++){
+                        if(x==tm[n[i]][3]+(tm[n[i]][1])-l){//後ろのは1まで減る 
+                        //joinのundefinedエラーはここの数字を大きくする
+                            for (let b=0;b<=20;b++){
+                                //7=19-b
                                 if(y==tm[n[i]][4]+(tm[n[i]][2])-b)s=i;
+                                //0=13-b
                                 if((tm[n[i]][2])-b===0)break ;
                             };
                         };
@@ -1343,7 +1395,8 @@
                 };
                 //2のときs==3にならなければならない
                 //合ってる。nの0番目だから
-                //alert(n[s]);//0
+                //alert(n)//undifinde
+                //alert(n[s]);//0 undifinde
                 //alert(tm[n[s]])//11622
                 f.label=tm[n[s]].join('');
             

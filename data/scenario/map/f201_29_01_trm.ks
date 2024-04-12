@@ -17,7 +17,7 @@
 [iscript ]
     //pushでイベントを記入する
     //どのマップからも移動していない場合初期位置に入れる。これはてきとう。ワープ移動とかに使う
-    if(f.maplst===undefined)f.etl='n2l';
+    if(f.maplst===undefined)f.etl='k9b';
     if(f.maplst==='f201_39_01_dmp')f.etl='n6b';//ゴミ置き場(N)から
     if(f.maplst==='f201_48_06_rep')f.etl='s9l';//冷蔵庫1(E)から
     if(f.maplst==='f201_39_13_ant')f.etl='l12t';//内階段(S)から
@@ -37,6 +37,12 @@
     push(1,2,20,9,2)//冷蔵庫1(E)へ
     push(1,1,12,13,2)//内階段(S)へ
     push(1,3,0,10,2)//機械洗浄(W)へ
+
+    //モノ配置
+    push(2,4,1,3)//テーブル1
+    push(4,3,5,3)//テーブル2
+    push(3,1,1,13)//テーブル3
+    push(3,1,6,13)//テーブル4
     
     //f.iseve=true//イベントが発生するか否かfalseにすることないよ(マップ移動のため)
     f.isfps=false//FPSモードの設定

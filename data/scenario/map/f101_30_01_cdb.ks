@@ -5,7 +5,7 @@
 ;ADV表示の準備------------------------------
 [adv]
 ;イベントラベル番号f.labelを作成する---------
-[crilbl]
+;[crilbl]
 ;---------------------------------------------------
 ;ラベルへ飛ぶ
 [jump target="&f.label" cond="!tf.warp"]
@@ -25,6 +25,7 @@
             if(f.maplst===undefined)f.etl='b3b';
             if(f.maplst==='f201_35_23_rep')f.etl='b1b';//第二工場(冷蔵庫2)(N)から
             if(f.maplst==='f101_20_01_set')f.etl='a2r';//セット室(W))から
+            if(f.maplst==='f101_34_01_pic')f.etl='d7l';//生産管理室(E))から
 
 
             //f.etlを分解収納するsplitをかける
@@ -32,8 +33,9 @@
             f.maplst=f.mpnm;//呼び出した(この)マップ名に中身を更新。
 
             //pushで範囲位置タイプを登録する
-            push(2,1,2,0,2)//第二工場(冷蔵庫2)(N)へ
-            push(1,1,0,2,2)//セット室(W)へ
+            push(2,1,2,0,2);//第二工場(冷蔵庫2)(N)へ
+            push(1,1,0,2,2);//セット室(W)へ
+            push(1,2,5,7,2);//生産管理室(E)へ
 
             f.isfps=false//FPSモードの設定
         [endscript ]
@@ -53,8 +55,15 @@
     *21202
     @eval exp="tf.mpnm='f201_35_23_rep'"
     [jump target="*confirm" ]
+    [s ]
     *11022
+    *12012
+    ;ごり押し修正
     @eval exp="tf.mpnm='f101_20_01_set'"
+    [jump target="*confirm" ]
+
+    *12572
+    @eval exp="tf.mpnm='f101_34_01_pic'"
     [jump target="*confirm" ]
 
     [s ]
@@ -64,6 +73,7 @@
     [dialog text="マップ移動するけどいいかな？" type="confirm" target="*go"  ]
     [knockback]
     [return]
+    [s ]
 
     ;マップ移動専用。このマップで追加したものを削除する。
     *go
